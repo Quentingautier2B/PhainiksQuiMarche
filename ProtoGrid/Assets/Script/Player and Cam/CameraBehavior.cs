@@ -25,11 +25,22 @@ public class CameraBehavior : MonoBehaviour
 
     #endregion
     public Slider zoomSlider;
-    float zoomLerp;
+    float zoomLerpValue;
     bool zoomBool;
     PostProcessVolume m_Volume;
     DepthOfField m_DOF;
     static float sliderValue;
+
+    [Header("Cheat")]
+    [SerializeField] bool cheatAllow;
+
+    public bool CaTourne = false;
+    public bool LeftLerp, RightLerp;
+    public bool CaZoom = false;
+    public bool ZoomLerp, DezoomLerp;
+    public float SpeedOfLerp = 1;
+
+    public Slider ZoomSlider;
 
 
     private void Awake()
@@ -47,12 +58,10 @@ public class CameraBehavior : MonoBehaviour
 
     private void Start()
     {
-/*        if (!FindObjectOfType<SceneChange>().Hub)
-        {*/
-            transform.position = playerPos.position;
-            zoomSlider.value = sliderValue;
-            m_DOF.focusDistance.value = (sliderValue * 10) + 10;
-            camTransform.localPosition = new Vector3(camTransform.localPosition.x, camTransform.localPosition.y, (sliderValue * -45) - 15);     
+        transform.position = playerPos.position;
+        zoomSlider.value = sliderValue;
+        m_DOF.focusDistance.value = (sliderValue * 10) + 10;
+        camTransform.localPosition = new Vector3(camTransform.localPosition.x, camTransform.localPosition.y, (sliderValue * -45) - 15);     
     }
 
 
@@ -79,11 +88,11 @@ public class CameraBehavior : MonoBehaviour
 
     IEnumerator valueChanged(float startPos, float DOFstart)
     {
-        zoomLerp += Time.deltaTime;
-        camTransform.localPosition = new Vector3(camTransform.localPosition.x, camTransform.localPosition.y, Mathf.Lerp(startPos, (zoomSlider.value * -45) - 15, zoomLerp));
+        zoomLerpValue += Time.deltaTime;
+        camTransform.localPosition = new Vector3(camTransform.localPosition.x, camTransform.localPosition.y, Mathf.Lerp(startPos, (zoomSlider.value * -45) - 15, zoomLerpValue));
         
-        m_DOF.focusDistance.value = Mathf.Lerp(DOFstart, (zoomSlider.value * 10) + 10, zoomLerp);
-        if (zoomLerp >= 1)
+        m_DOF.focusDistance.value = Mathf.Lerp(DOFstart, (zoomSlider.value * 10) + 10, zoomLerpValue);
+        if (zoomLerpValue >= 1)
         {
             //zoomLerp = 0;
             zoomBool = false;
@@ -98,11 +107,142 @@ public class CameraBehavior : MonoBehaviour
 
     private void Update()
     {
-        AngleCheck();
-
-        if (lerp == true)
+        if (!CaTourne)
         {
-            Lerp(angleLerp);
+            AngleCheck();
+
+            if (lerp)
+            {
+                Lerp(angleLerp);
+            }
+            if (cheatAllow)
+            {
+
+                if (Input.GetKeyDown(KeyCode.Keypad1))
+                {
+                    OnLeftButtonClick();
+                }
+                else if (Input.GetKeyDown(KeyCode.Keypad3))
+                {
+                    OnRightButtonClick();
+                }     
+            }
+
+            //if (cheatAllow)
+            //{
+            //    if (!lerp)
+            //    {
+            //        var angle = transform.eulerAngles.y;
+            //        var Rotate = Mathf.RoundToInt(((angle - 45) % 360) / 90);
+            //        transform.eulerAngles.y
+
+            //    }
+            //}
+            
+        }
+
+        if (cheatAllow)
+        {
+
+            if (!CaZoom)
+            { 
+                if (Input.GetKeyDown(KeyCode.Keypad4))
+                {
+                    if (CaTourne && LeftLerp == true)
+                    {
+                        CaTourne = false;
+                        LeftLerp = false;
+                    }
+                    else
+                    {
+                        RightLerp = false;
+                        LeftLerp = true;
+                        CaTourne = true;
+                    }
+                
+                }
+                else if (Input.GetKeyDown(KeyCode.Keypad6))
+                {
+                    if (CaTourne && RightLerp == true)
+                    {
+                        CaTourne = false;
+                        RightLerp = false;
+                    }
+                    else
+                    {
+                        LeftLerp = false;
+                        RightLerp = true;
+                        CaTourne = true;
+                    }
+                }
+            }
+
+            if (CaTourne || CaZoom)
+            {
+                if(Input.GetKeyDown(KeyCode.KeypadPlus))
+                {
+                    SpeedOfLerp += 0.5f;
+                }
+                else if (Input.GetKeyDown(KeyCode.KeypadMinus))
+                {
+                    if (SpeedOfLerp > 0.5)
+                    {
+                        SpeedOfLerp -= 0.5f;
+                    }
+                }
+            }
+
+            if(!CaTourne)
+            {
+                if(Input.GetKeyDown(KeyCode.Keypad8))
+                {
+                    if (CaZoom && ZoomLerp == true)
+                    {
+                        CaTourne = false;
+                        ZoomLerp = false;
+                    }
+                    else
+                    {
+                        DezoomLerp = false;
+                        ZoomLerp = true;
+                        CaZoom = true;
+                    }
+                }
+                else if (Input.GetKeyDown(KeyCode.Keypad2))
+                {
+                    if (CaZoom && DezoomLerp == true)
+                    {
+                        CaTourne = false;
+                        DezoomLerp = false;
+                    }
+                    else
+                    {
+                        ZoomLerp = false;
+                        DezoomLerp = true;
+                        CaZoom = true;
+                    }
+                }
+            }
+            
+            if (LeftLerp)
+            {
+                CamLerp(1);
+            }
+            else if (RightLerp)
+            {
+                CamLerp(-1);
+            }
+            else if (ZoomLerp) 
+            {
+                zoomSlider.value += 0.1f * SpeedOfLerp * Time.deltaTime;
+                if (ZoomSlider.value == 1) ZoomLerp = false; CaZoom = false;
+            }
+            else if (DezoomLerp)
+            {
+                zoomSlider.value -= 0.1f * SpeedOfLerp * Time.deltaTime;
+                if (ZoomSlider.value == 0) DezoomLerp = false; CaZoom = false;
+            }
+
         }
 
     }
@@ -168,9 +308,19 @@ public class CameraBehavior : MonoBehaviour
             interpolateAmount = 0;
         }
     }
+
     void AngleCheck()
     {
         rotateMode = Mathf.RoundToInt(((transform.localEulerAngles.y - 45) % 360) / 90);
+
+    }
+
+    void CamLerp(float X)
+    {
+
+        target = Quaternion.Euler(transform.localEulerAngles.x, transform.localEulerAngles.y + X, transform.localEulerAngles.z);
+        transform.rotation = Quaternion.Slerp(transform.rotation, target, Time.deltaTime * SpeedOfLerp);
+
     }
 
 }
